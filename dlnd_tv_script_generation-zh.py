@@ -147,7 +147,7 @@ helper.preprocess_and_save_data(data_dir, token_lookup, create_lookup_tables)
 # # 检查点
 # 这是你遇到的第一个检点。如果你想要回到这个 notebook，或需要重新打开 notebook，你都可以从这里开始。预处理的数据都已经保存完毕。
 
-# In[2]:
+# In[106]:
 
 """
 DON'T MODIFY ANYTHING IN THIS CELL
@@ -171,7 +171,7 @@ int_text, vocab_to_int, int_to_vocab, token_dict = helper.load_preprocess()
 # 
 # ### 检查 TensorFlow 版本并访问 GPU
 
-# In[3]:
+# In[107]:
 
 """
 DON'T MODIFY ANYTHING IN THIS CELL
@@ -201,7 +201,7 @@ print('TensorFlow Version: {}'.format(tf.__version__))
 # 
 # 返回下列元组中的占位符 `(Input, Targets, LearningRate)`
 
-# In[5]:
+# In[108]:
 
 def get_inputs():
     """
@@ -232,7 +232,7 @@ tests.test_get_inputs(get_inputs)
 # 
 # 返回 cell 和下列元组中的初始状态 `(Cell, InitialState)`
 
-# In[62]:
+# In[109]:
 
 def get_init_cell(batch_size, rnn_size):
     """
@@ -259,7 +259,7 @@ tests.test_get_init_cell(get_init_cell)
 # 使用 TensorFlow 将嵌入运用到 `input_data` 中。
 # 返回嵌入序列。
 
-# In[63]:
+# In[110]:
 
 def get_embed(input_data, vocab_size, embed_dim):
     """
@@ -290,7 +290,7 @@ tests.test_get_embed(get_embed)
 # 
 # 返回下列元组中的输出和最终状态`(Outputs, FinalState)`
 
-# In[64]:
+# In[111]:
 
 def build_rnn(cell, inputs):
     """
@@ -320,7 +320,7 @@ tests.test_build_rnn(build_rnn)
 # 
 # 返回下列元组中的 logit 和最终状态 `Logits, FinalState`
 
-# In[86]:
+# In[112]:
 
 def build_nn(cell, rnn_size, input_data, vocab_size, embed_dim):
     """
@@ -356,7 +356,7 @@ tests.test_build_nn(build_nn)
 # 
 # 例如 `get_batches([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], 2, 3)` 将返回下面这个 Numpy 数组：
 
-# In[87]:
+# In[113]:
 
 # [
 #   # First Batch
@@ -377,7 +377,7 @@ tests.test_build_nn(build_nn)
 # ]
 
 
-# In[88]:
+# In[116]:
 
 def get_batches(int_text, batch_size, seq_length):
     """
@@ -388,21 +388,15 @@ def get_batches(int_text, batch_size, seq_length):
     :return: Batches as a Numpy array
     """
     # TODO: Implement Function
-    per_batch_size = batch_size * seq_length
-    n_batches = len(int_text) // per_batch_size
+    n_batches = int(len(int_text) / (batch_size * seq_length))
+    # Drop the last few characters to make only full batches
+    xdata = np.array(int_text[: n_batches * batch_size * seq_length])
+    ydata = np.array(int_text[1: n_batches * batch_size * seq_length + 1])
+    # ydata[-1] = xdata[0] 
+    x_batches = np.split(xdata.reshape(batch_size, -1), n_batches, 1)
+    y_batches = np.split(ydata.reshape(batch_size, -1), n_batches, 1)
     
-    int_text = np.array(int_text[:n_batches * per_batch_size])
-    int_text = int_text.reshape((batch_size, -1))
-    
-    
-    batches = []
-    for n in range(0, int_text.shape[1], seq_length):
-        x = int_text[:, n:n+seq_length]
-        y = np.zeros_like(x)
-        y[:, :-1], y[:, -1] = x[:, 1:], x[:, 0]
-        batches.append([x, y])
-        
-    return np.array(batches)
+    return np.array(list(zip(x_batches, y_batches)))
 
 
 """
@@ -423,22 +417,22 @@ tests.test_get_batches(get_batches)
 # - 将 `learning_rate` 设置为学习率。
 # - 将 `show_every_n_batches` 设置为神经网络应输出的程序组数量。
 
-# In[89]:
+# In[128]:
 
 # Number of Epochs
-num_epochs = 100
+num_epochs = 70
 # Batch Size
-batch_size = 256
+batch_size = 512
 # RNN Size
-rnn_size = 256
+rnn_size = 512
 # Embedding Dimension Size
-embed_dim = 256
+embed_dim = 512
 # Sequence Length
-seq_length = 10
+seq_length = 16
 # Learning Rate
-learning_rate = 0.01
+learning_rate = 0.005
 # Show stats for every n number of batches
-show_every_n_batches = 20
+show_every_n_batches = 8
 
 """
 DON'T MODIFY ANYTHING IN THIS CELL THAT IS BELOW THIS LINE
@@ -449,7 +443,7 @@ save_dir = './save'
 # ### 创建图表
 # 使用你实现的神经网络创建图表。
 
-# In[90]:
+# In[129]:
 
 """
 DON'T MODIFY ANYTHING IN THIS CELL
@@ -485,7 +479,7 @@ with train_graph.as_default():
 # ## 训练
 # 在预处理数据中训练神经网络。如果你遇到困难，请查看这个[表格](https://discussions.udacity.com/)，看看是否有人遇到了和你一样的问题。
 
-# In[91]:
+# In[130]:
 
 """
 DON'T MODIFY ANYTHING IN THIS CELL
@@ -523,7 +517,7 @@ with tf.Session(graph=train_graph) as sess:
 # ## 储存参数
 # 储存 `seq_length` 和 `save_dir` 来生成新的电视剧剧本。
 
-# In[92]:
+# In[131]:
 
 """
 DON'T MODIFY ANYTHING IN THIS CELL
@@ -534,7 +528,7 @@ helper.save_params((seq_length, save_dir))
 
 # # 检查点
 
-# In[93]:
+# In[132]:
 
 """
 DON'T MODIFY ANYTHING IN THIS CELL
@@ -559,7 +553,7 @@ seq_length, load_dir = helper.load_params()
 # 
 # 返回下列元组中的 tensor `(InputTensor, InitialStateTensor, FinalStateTensor, ProbsTensor)`
 
-# In[94]:
+# In[133]:
 
 def get_tensors(loaded_graph):
     """
@@ -584,7 +578,7 @@ tests.test_get_tensors(get_tensors)
 # ### 选择词汇
 # 实现 `pick_word()` 函数来使用 `probabilities` 选择下一个词汇。
 
-# In[98]:
+# In[134]:
 
 def pick_word(probabilities, int_to_vocab):
     """
@@ -606,7 +600,7 @@ tests.test_pick_word(pick_word)
 # ## 生成电视剧剧本
 # 这将为你生成一个电视剧剧本。通过设置 `gen_length` 来调整你想生成的剧本长度。
 
-# In[105]:
+# In[139]:
 
 gen_length = 200
 # homer_simpson, moe_szyslak, or Barney_Gumble
